@@ -55,3 +55,61 @@ body {
 .thin-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
 }
+
+@keyframes hero-node-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-arrow-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes hero-status-cycle {
+  0%, 8% { fill: #6b7280; }
+  25%, 33% { fill: #22c55e; }
+  50%, 58% { fill: #eab308; }
+  75%, 83% { fill: #ef4444; }
+  100% { fill: #6b7280; }
+}
+
+@keyframes hero-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.hero-node {
+  opacity: 0;
+  animation: hero-node-in 0.4s ease-out forwards;
+}
+
+.hero-arrow {
+  animation: hero-arrow-draw 0.6s ease-out forwards;
+}
+
+.status-live {
+  animation: hero-status-cycle 6s ease-in-out infinite;
+}
+
+.cursor-blink {
+  animation: hero-cursor-blink 1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-node,
+  .hero-arrow,
+  .status-live,
+  .cursor-blink {
+    animation: none !important;
+    opacity: 1 !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
