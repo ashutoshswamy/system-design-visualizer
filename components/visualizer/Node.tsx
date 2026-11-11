@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import { NODE_H, NODE_TYPES, NODE_W, STATUS_COLOR } from "@/lib/visualizer/constants";
+import { NODE_H, NODE_W } from "@/lib/visualizer/constants";
 import { useVisualizerStore } from "@/lib/visualizer/store";
 import { THEMES } from "@/lib/visualizer/theme";
 import type { DesignNode } from "@/lib/visualizer/types";
-import { NodeIcon } from "./icons";
+import { Station } from "./Station";
 
 const DRAG_THRESHOLD = 4;
 
@@ -25,7 +25,6 @@ export function Node({
   const { moveNode, cycleStatus, select, toggleShiftSelect, setEditing, theme } = useVisualizerStore();
   const drag = useRef<{ startX: number; startY: number; lastX: number; lastY: number; dragging: boolean } | null>(null);
   const handleDrag = useRef(false);
-  const meta = NODE_TYPES[node.type];
   const colors = THEMES[theme];
 
   function onPointerDown(e: React.PointerEvent) {
@@ -68,60 +67,40 @@ export function Node({
     onStartConnect(node.id);
   }
 
-  function onDoubleClick(e: React.MouseEvent) {
-    e.stopPropagation();
-    setEditing(node.id);
-  }
-
   return (
     <g
+      className="station"
+      data-selected={selected}
       transform={`translate(${node.x}, ${node.y})`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onDoubleClick={onDoubleClick}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        setEditing(node.id);
+      }}
       style={{ cursor: "grab" }}
     >
-      <rect
-        width={NODE_W}
-        height={NODE_H}
-        rx="3"
-        fill={colors.panel2}
-        stroke={selected || shiftSelected ? "#f0b429" : colors.border}
-        strokeWidth={selected ? 2 : 1}
-        strokeDasharray={shiftSelected ? "4 3" : undefined}
-      />
-      <rect width="4" height={NODE_H} fill={meta.color} />
-      <foreignObject x="12" y="0" width="24" height={NODE_H}>
-        <div style={{ display: "flex", alignItems: "center", height: NODE_H }}>
-          <NodeIcon type={node.type} color={meta.color} />
-        </div>
-      </foreignObject>
-      <text x="44" y={NODE_H / 2} dominantBaseline="middle" fill={colors.text} fontSize="13" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">
-        {node.label}
-      </text>
-      <circle
-        cx={NODE_W - 14}
-        cy="14"
-        r="5"
-        fill={STATUS_COLOR[node.status]}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation();
-          cycleStatus(node.id);
-        }}
-        style={{ cursor: "pointer" }}
-      />
-      <circle
-        cx={NODE_W}
-        cy={NODE_H / 2}
-        r="6"
-        fill={colors.bg}
-        stroke="#f0b429"
-        strokeWidth="1.5"
-        onPointerDown={onHandlePointerDown}
-        style={{ cursor: "crosshair" }}
-      />
+      <Station
+        type={node.type}
+        label={node.label}
+        status={node.status}
+        colors={colors}
+        selected={selected}
+        multi={shiftSelected}
+        onStatusClick={() => cycleStatus(node.id)}
+      >
+        <circle
+          className="station-handle no-export"
+          cx={NODE_W}
+          cy={NODE_H / 2}
+          r="8"
+          style={{ fill: colors.bg, stroke: colors.ink, strokeWidth: 2.5, cursor: "crosshair" }}
+          onPointerDown={onHandlePointerDown}
+        >
+          <title>Drag to connect</title>
+        </circle>
+      </Station>
     </g>
   );
 }

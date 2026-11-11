@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { NODE_H, NODE_W } from "@/lib/visualizer/constants";
+import { NODE_H, NODE_TYPES, NODE_W } from "@/lib/visualizer/constants";
 import { borderPoint, clientToCanvasPoint } from "@/lib/visualizer/geometry";
 import { useVisualizerStore } from "@/lib/visualizer/store";
 import { THEMES } from "@/lib/visualizer/theme";
@@ -187,6 +187,7 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
   return (
     <svg
       ref={svgRef}
+      aria-label="Diagram canvas"
       viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
       style={{ background: colors.bg }}
       className="w-full h-full"
@@ -197,11 +198,22 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
       onPointerUp={onSvgPointerUp}
     >
       <defs>
-        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-          <path d="M0 0 L8 4 L0 8 Z" fill={colors.muted} />
-        </marker>
-        <pattern id="grid-dots" width="32" height="32" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="1" fill={colors.grid} />
+        {[...Object.entries(NODE_TYPES).map(([k, v]) => [k, v.color]), ["sel", colors.ink]].map(([id, fill]) => (
+          <marker
+            key={id}
+            id={`arrow-${id}`}
+            markerUnits="userSpaceOnUse"
+            markerWidth="14"
+            markerHeight="14"
+            refX="11"
+            refY="7"
+            orient="auto"
+          >
+            <path d="M1 1 L12 7 L1 13 Z" fill={fill} stroke={fill} strokeWidth="1.5" strokeLinejoin="round" />
+          </marker>
+        ))}
+        <pattern id="grid-dots" width="40" height="40" patternUnits="userSpaceOnUse">
+          <circle cx="1.5" cy="1.5" r="1.5" fill={colors.grid} />
         </pattern>
       </defs>
 
@@ -223,8 +235,10 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
           height={box.h + GROUP_PADDING * 2}
           fill="none"
           stroke={colors.muted}
-          strokeDasharray="6 4"
-          rx="6"
+          strokeWidth="1.5"
+          strokeDasharray="2 6"
+          strokeLinecap="round"
+          rx="22"
           pointerEvents="all"
           onPointerDown={(e) => onGroupBoxPointerDown(box.memberId, e)}
           style={{ cursor: "grab" }}
@@ -241,9 +255,11 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
       {draftStart && edgeDraft && (
         <path
           d={`M ${draftStart.x} ${draftStart.y} L ${edgeDraft.x} ${edgeDraft.y}`}
-          stroke="#f0b429"
-          strokeWidth="1.5"
-          strokeDasharray="4 3"
+          className="no-export"
+          stroke={colors.ink}
+          strokeWidth="3"
+          strokeDasharray="2 7"
+          strokeLinecap="round"
           fill="none"
         />
       )}
@@ -265,9 +281,12 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
           y={marqueeRect.y}
           width={marqueeRect.w}
           height={marqueeRect.h}
-          fill="#f0b42922"
-          stroke="#f0b429"
-          strokeWidth="1"
+          className="no-export"
+          fill={colors.ink}
+          fillOpacity="0.08"
+          stroke={colors.ink}
+          strokeWidth="1.5"
+          rx="6"
         />
       )}
     </svg>

@@ -1,10 +1,14 @@
 # System Design Visualizer
 
-A canvas tool for sketching system-design diagrams — drag components onto an infinite canvas, connect them with bendy arrows, mark each one's live status, group/organize, and export a PNG. No backend, no accounts — everything saves to your browser.
+**Live:** https://designvisualizer.ashutoshswamy.in
+
+Visual world: a transit map. Components are stations, connections are 45-degree colored lines, light "day map" and dark "night map" themes. Type is Bricolage Grotesque (display) and DM Sans (UI). Toasts use [sileo](https://sileo.aaryan.design).
+
+A canvas tool for sketching system-design diagrams: drag components onto an infinite canvas, connect them with bendy arrows, mark each one's live status, group/organize, and export a PNG. No backend, no accounts — everything saves to your browser.
 
 ## Features
 
-- 21 component types across client/edge, compute, data, messaging, and integration/ops
+- 33 component types across client/edge, compute, data, messaging, and integration/ops
 - Connect nodes by dragging an arrow between them; arrows curve only when needed
 - Status per node — idle / healthy / warning / down, cycled by click or set in the edit modal
 - Select & organize — click, shift-click, or marquee-drag to multi-select; group nodes to move as one; clean delete including connected edges

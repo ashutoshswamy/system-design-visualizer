@@ -19,7 +19,19 @@ export type NodeType =
   | "thirdparty"
   | "auth"
   | "firewall"
-  | "monitoring";
+  | "monitoring"
+  | "iot"
+  | "proxy"
+  | "mesh"
+  | "cluster"
+  | "serverless"
+  | "warehouse"
+  | "timeseries"
+  | "graphdb"
+  | "stream"
+  | "notification"
+  | "vault"
+  | "logging";
 
 export type NodeStatus = "idle" | "healthy" | "warning" | "down";
 

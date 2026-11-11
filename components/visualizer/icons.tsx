@@ -1,6 +1,6 @@
 import type { NodeType } from "@/lib/visualizer/types";
 
-/** Hand-drawn-path glyphs, monochrome, stroke-based so they survive PNG export without fonts. */
+/** Authored stroke glyphs, monochrome, so they survive PNG export without fonts or assets. */
 const PATHS: Record<NodeType, string> = {
   client: "M4 3h16v12H4z M9 19h6 M12 15v4",
   mobile: "M8 2h8v20H8z M11 19h2",
@@ -27,7 +27,34 @@ const PATHS: Record<NodeType, string> = {
   auth: "M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z M9.5 12.5l1.8 1.8L15 10.5",
   firewall: "M4 5h16v14H4z M4 9.5h16 M4 14h16 M9.5 5v4.5 M15 9.5v4.5 M9.5 14v5",
   monitoring: "M4 12h3l2-6 3 12 3-9 2 5h3",
+
+  iot: "M8 8h8v8H8z M10 4v4 M14 4v4 M10 16v4 M14 16v4 M4 10h4 M4 14h4 M16 10h4 M16 14h4",
+  proxy: "M4 8h13 M14 5l3 3-3 3 M20 16H7 M10 13l-3 3 3 3",
+  mesh: "M4 8h16 M4 16h16 M8 4v16 M16 4v16",
+  cluster: "M12 3l8 4.5v9L12 21l-8-4.5v-9z M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z",
+  serverless: "M13 3L5 13h6l-1 8 8-10h-6z",
+  warehouse: "M3 9l9-5 9 5 M5 9v10h14V9 M9 19v-6h6v6",
+  timeseries: "M4 4v16h16 M7 15l3-4 3 2 5-6",
+  graphdb: "M10 4a2 2 0 1 0 4 0 2 2 0 0 0-4 0z M4 16a2 2 0 1 0 4 0 2 2 0 0 0-4 0z M16 16a2 2 0 1 0 4 0 2 2 0 0 0-4 0z M11 6l-4 8 M13 6l4 8 M8 17h8",
+  stream: "M3 8c3-3 6 3 9 0s6 3 9 0 M3 16c3-3 6 3 9 0s6 3 9 0",
+  notification: "M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z M10 21h4",
+  vault: "M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3 M12 15v2",
+  logging: "M5 4h14v16H5z M8 9h8 M8 13h8 M8 17h5",
 };
+
+/** Same glyph as raw SVG children (24x24 box) so it can sit inside any <svg> without a foreignObject. */
+export function NodeGlyph({ type, color, strokeWidth = 1.75 }: { type: NodeType; color: string; strokeWidth?: number }) {
+  return (
+    <path
+      d={PATHS[type]}
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  );
+}
 
 export function NodeIcon({ type, color }: { type: NodeType; color: string }) {
   return (

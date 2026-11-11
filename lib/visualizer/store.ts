@@ -4,6 +4,7 @@ import { load, save } from "./persistence";
 import type { DesignEdge, DesignNode, NodeStatus, NodeType } from "./types";
 
 export type Theme = "dark" | "light";
+export type ThemePref = Theme | "system";
 const THEME_KEY = "system-design-visualizer:theme";
 
 export interface ViewBox {
@@ -28,8 +29,11 @@ interface VisualizerState {
   editingId: string | null;
   viewBox: ViewBox;
   theme: Theme;
+  themePref: ThemePref;
   hydrated: boolean;
   hydrate: () => void;
+  syncTheme: () => void;
+  setThemePref: (pref: ThemePref) => void;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
   addNode: (type: NodeType, x: number, y: number) => void;
@@ -47,6 +51,7 @@ interface VisualizerState {
   setEditing: (id: string | null) => void;
   deleteSelected: () => void;
   clear: () => void;
+  loadDesign: (name: string, nodes: DesignNode[], edges: DesignEdge[]) => void;
   zoomIn: () => void;
   zoomOut: () => void;
   zoomReset: () => void;
@@ -54,7 +59,14 @@ interface VisualizerState {
   panBy: (dx: number, dy: number) => void;
 }
 
-const DEFAULT_VIEWBOX: ViewBox = { x: 0, y: 0, w: CANVAS_W, h: CANVAS_H };
+/** Opening view: tighter than the full canvas so labels are readable at 100%. */
+export const VIEW_W = 1280;
+function defaultViewBox(): ViewBox {
+  // open at a readable scale for the canvas's actual pixel width (palette takes 208-240px from md up)
+  const px = typeof window === "undefined" ? 1200 : window.innerWidth - (window.innerWidth >= 768 ? 224 : 0);
+  const w = Math.min(1600, Math.max(420, px / 0.8));
+  return { x: 0, y: 0, w, h: (w * CANVAS_H) / CANVAS_W };
+}
 
 function clampWidth(w: number) {
   return Math.min(CANVAS_W / MIN_ZOOM, Math.max(CANVAS_W / MAX_ZOOM, w));
@@ -93,27 +105,53 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => {
     selectedId: null,
     shiftSelectedIds: [],
     editingId: null,
-    viewBox: DEFAULT_VIEWBOX,
-    theme: "dark",
+    viewBox: { x: 0, y: 0, w: VIEW_W, h: (VIEW_W * CANVAS_H) / CANVAS_W },
+    theme: "light",
+    themePref: "system",
     hydrated: false,
 
     hydrate: () => {
       const loaded = load();
-      const theme = (window.localStorage.getItem(THEME_KEY) as Theme | null) ?? "dark";
-      document.documentElement.setAttribute("data-theme", theme);
+      get().syncTheme();
       set({
+        viewBox: defaultViewBox(),
         nodes: loaded?.nodes ?? [],
         edges: loaded?.edges ?? [],
         designName: loaded?.name ?? "Untitled Design",
-        theme,
         hydrated: true,
       });
+    },
+
+    // the boot script in layout.tsx already resolved saved/system theme onto <html>
+    syncTheme: () => {
+      const attr = document.documentElement.getAttribute("data-theme");
+      let saved: string | null = null;
+      try {
+        saved = window.localStorage.getItem(THEME_KEY);
+      } catch {}
+      set({
+        theme: attr === "dark" ? "dark" : "light",
+        themePref: saved === "light" || saved === "dark" ? saved : "system",
+      });
+    },
+
+    setThemePref: (pref) => {
+      const theme: Theme =
+        pref === "system" ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : pref;
+      try {
+        if (pref === "system") window.localStorage.removeItem(THEME_KEY);
+        else window.localStorage.setItem(THEME_KEY, pref);
+      } catch {}
+      document.documentElement.setAttribute("data-theme", theme);
+      set({ theme, themePref: pref });
     },
 
     toggleTheme: () => get().setTheme(get().theme === "dark" ? "light" : "dark"),
 
     setTheme: (theme) => {
-      window.localStorage.setItem(THEME_KEY, theme);
+      try {
+        window.localStorage.setItem(THEME_KEY, theme);
+      } catch {}
       document.documentElement.setAttribute("data-theme", theme);
       set({ theme });
     },
@@ -213,6 +251,11 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => {
       persist();
     },
 
+    loadDesign: (name, nodes, edges) => {
+      set({ designName: name, nodes, edges, selectedId: null, shiftSelectedIds: [], viewBox: defaultViewBox() });
+      persistNow();
+    },
+
     clear: () => {
       set({ nodes: [], edges: [], selectedId: null });
       persist();
@@ -220,7 +263,7 @@ export const useVisualizerStore = create<VisualizerState>((set, get) => {
 
     zoomIn: () => set((s) => ({ viewBox: zoomBy(s.viewBox, ZOOM_STEP) })),
     zoomOut: () => set((s) => ({ viewBox: zoomBy(s.viewBox, 1 / ZOOM_STEP) })),
-    zoomReset: () => set({ viewBox: DEFAULT_VIEWBOX }),
+    zoomReset: () => set({ viewBox: defaultViewBox() }),
     zoomAt: (cx, cy, factor) => set((s) => ({ viewBox: zoomAtPoint(s.viewBox, cx, cy, factor) })),
     panBy: (dx, dy) =>
       set((s) => ({ viewBox: { ...s.viewBox, x: s.viewBox.x + dx, y: s.viewBox.y + dy } })),

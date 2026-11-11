@@ -23,11 +23,48 @@ function boundsOf(nodes: DesignNode[]) {
   };
 }
 
+const FONT_ALIAS = "SDV Body";
+
+/** The page's web font lives in the document, not in a detached SVG image: copy its @font-face
+ * rules into the clone with the files inlined, so exported labels keep DM Sans. */
+async function embeddedFontCss(sample: Element | null) {
+  if (!sample) return "";
+  const family = getComputedStyle(sample).fontFamily.split(",")[0].trim().replace(/^["']|["']$/g, "");
+  const rules: CSSFontFaceRule[] = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    let list: CSSRuleList;
+    try {
+      list = sheet.cssRules;
+    } catch {
+      continue; // cross-origin sheet
+    }
+    for (const r of Array.from(list)) {
+      if (r instanceof CSSFontFaceRule && r.style.getPropertyValue("font-family").replace(/["']/g, "") === family) rules.push(r);
+    }
+  }
+  const css = await Promise.all(
+    rules.map(async (r) => {
+      let text = r.cssText.replace(/font-family:[^;]+;/, `font-family: "${FONT_ALIAS}";`);
+      for (const [, url] of text.matchAll(/url\("?([^")]+)"?\)/g)) {
+        const blob = await (await fetch(url)).blob();
+        const data = await new Promise<string>((res) => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result as string);
+          fr.readAsDataURL(blob);
+        });
+        text = text.replace(url, data);
+      }
+      return text;
+    }),
+  );
+  return css.join("\n");
+}
+
 export async function exportPNG(
   svgEl: SVGSVGElement,
   nodes: DesignNode[],
   filename = "design.png",
-  bgColor = "#0a0a0b",
+  bgColor = "#f4f5f7",
 ) {
   const { x, y, width, height } = boundsOf(nodes);
 
@@ -43,6 +80,16 @@ export async function exportPNG(
   bg.setAttribute("height", String(height));
   bg.setAttribute("fill", bgColor);
   clone.insertBefore(bg, clone.firstChild);
+
+  clone.querySelectorAll(".no-export").forEach((el) => el.remove());
+
+  const fontCss = await embeddedFontCss(svgEl.querySelector("text")).catch(() => "");
+  if (fontCss) {
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    style.textContent = fontCss;
+    clone.insertBefore(style, clone.firstChild);
+    clone.querySelectorAll("text").forEach((t) => ((t as SVGElement).style.fontFamily = `"${FONT_ALIAS}", sans-serif`));
+  }
 
   const svgData = new XMLSerializer().serializeToString(clone);
   const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgData)}`;

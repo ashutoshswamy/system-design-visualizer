@@ -36,33 +36,58 @@ export function borderPoint(node: DesignNode, tx: number, ty: number) {
   return { x: cx + dx * scale, y: cy + dy * scale };
 }
 
+type Pt = { x: number; y: number };
+
+/** Polyline through `pts` with each inner corner rounded by up to `r`. */
+function rounded(pts: Pt[], r: number) {
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [a, b, c] = [pts[i - 1], pts[i], pts[i + 1]];
+    const la = Math.hypot(b.x - a.x, b.y - a.y);
+    const lc = Math.hypot(c.x - b.x, c.y - b.y);
+    const k = Math.min(r, la / 2, lc / 2);
+    if (k < 0.5) continue;
+    d += ` L ${b.x + ((a.x - b.x) / la) * k} ${b.y + ((a.y - b.y) / la) * k}`;
+    d += ` Q ${b.x} ${b.y} ${b.x + ((c.x - b.x) / lc) * k} ${b.y + ((c.y - b.y) / lc) * k}`;
+  }
+  const last = pts[pts.length - 1];
+  return `${d} L ${last.x} ${last.y}`;
+}
+
 /**
- * SVG cubic-bezier between two nodes' borders. Straight when the nodes are roughly
- * aligned (horizontal/vertical) — bend only grows as the connection turns diagonal.
+ * Transit-map route between two nodes: leaves from the side facing the target, runs straight,
+ * takes one 45° diagonal to change lanes, runs straight again. Never freehand curves.
  */
-export function edgePath(from: DesignNode, to: DesignNode) {
-  const fromCenter = { x: from.x + NODE_W / 2, y: from.y + NODE_H / 2 };
-  const toCenter = { x: to.x + NODE_W / 2, y: to.y + NODE_H / 2 };
-  const start = borderPoint(from, toCenter.x, toCenter.y);
-  const end = borderPoint(to, fromCenter.x, fromCenter.y);
+export function edgePath(from: Pick<DesignNode, "x" | "y">, to: Pick<DesignNode, "x" | "y">) {
+  const fc = { x: from.x + NODE_W / 2, y: from.y + NODE_H / 2 };
+  const tc = { x: to.x + NODE_W / 2, y: to.y + NODE_H / 2 };
+  const dx = tc.x - fc.x;
+  const dy = tc.y - fc.y;
+  const horizontal = Math.abs(dx) - NODE_W >= Math.abs(dy) - NODE_H; // compare the free gaps, not centers
 
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const dist = Math.hypot(dx, dy) || 1;
-  const nx = -dy / dist;
-  const ny = dx / dist;
-
-  const skew = Math.min(Math.abs(dx), Math.abs(dy)) / dist; // 0 = axis-aligned, ~0.71 = 45°
-  const bulge = Math.min(dist * 0.25, 60) * Math.min(1, skew / 0.5);
-
-  const c1x = start.x + dx * 0.33 + nx * bulge;
-  const c1y = start.y + dy * 0.33 + ny * bulge;
-  const c2x = start.x + dx * 0.66 - nx * bulge;
-  const c2y = start.y + dy * 0.66 - ny * bulge;
-
-  return {
-    start,
-    end,
-    d: `M ${start.x} ${start.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${end.x} ${end.y}`,
-  };
+  let start: Pt;
+  let end: Pt;
+  let pts: Pt[];
+  if (horizontal) {
+    const sx = Math.sign(dx) || 1;
+    start = { x: fc.x + (sx * NODE_W) / 2, y: fc.y };
+    end = { x: tc.x - (sx * NODE_W) / 2, y: tc.y };
+    const run = Math.abs(end.x - start.x) - Math.abs(end.y - start.y);
+    const h = Math.max(run, 0) / 2;
+    pts =
+      run > 0
+        ? [start, { x: start.x + sx * h, y: start.y }, { x: end.x - sx * h, y: end.y }, end]
+        : [start, end];
+  } else {
+    const sy = Math.sign(dy) || 1;
+    start = { x: fc.x, y: fc.y + (sy * NODE_H) / 2 };
+    end = { x: tc.x, y: tc.y - (sy * NODE_H) / 2 };
+    const run = Math.abs(end.y - start.y) - Math.abs(end.x - start.x);
+    const h = Math.max(run, 0) / 2;
+    pts =
+      run > 0
+        ? [start, { x: start.x, y: start.y + sy * h }, { x: end.x, y: end.y - sy * h }, end]
+        : [start, end];
+  }
+  return { start, end, d: rounded(pts, 16) };
 }

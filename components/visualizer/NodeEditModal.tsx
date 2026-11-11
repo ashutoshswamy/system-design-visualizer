@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { STATUS_ORDER } from "@/lib/visualizer/constants";
+import { useEffect, useState } from "react";
+import { sileo } from "sileo";
+import { NODE_TYPES, STATUS_COLOR, STATUS_ORDER } from "@/lib/visualizer/constants";
 import { useVisualizerStore } from "@/lib/visualizer/store";
 import type { NodeStatus } from "@/lib/visualizer/types";
+
+const STATUS_HINT: Record<NodeStatus, string> = {
+  idle: "Placed, not checked",
+  healthy: "Serving traffic",
+  warning: "Degraded or slow",
+  down: "Unreachable",
+};
 
 export function NodeEditModal() {
   const { editingId } = useVisualizerStore();
@@ -17,60 +25,87 @@ function NodeEditModalInner({ id }: { id: string }) {
   const [label, setLabel] = useState(node?.label ?? "");
   const [status, setStatusLocal] = useState<NodeStatus>(node?.status ?? "idle");
 
-  if (!node) return null;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setEditing(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setEditing]);
 
-  function close() {
-    setEditing(null);
-  }
+  if (!node) return null;
+  const meta = NODE_TYPES[node.type];
 
   function save() {
-    renameNode(node!.id, label.trim() || node!.label);
+    const name = label.trim() || node!.label;
+    renameNode(node!.id, name);
     setStatus(node!.id, status);
-    close();
+    setEditing(null);
+    sileo.success({ title: "Component updated", description: `${name} is ${status}.` });
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
-      onClick={close}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4"
+      onClick={() => setEditing(null)}
     >
       <div
-        className="w-full max-w-80 rounded-sm border border-[var(--border-c)] bg-[var(--panel)] p-4 font-mono text-sm text-[var(--foreground)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Edit ${meta.label}`}
+        className="w-full max-w-sm rounded-panel border border-line bg-panel p-5 text-ink shadow-[0_24px_60px_-20px_rgb(var(--shadow)/0.5)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-xs uppercase tracking-wide text-[var(--muted)] mb-3">Edit component</div>
+        <div className="mb-4 flex items-center gap-3">
+          <span className="size-3.5 rounded-full" style={{ background: meta.color }} />
+          <h2 className="font-display text-xl font-bold tracking-tight">Edit {meta.label}</h2>
+        </div>
 
-        <label className="block text-xs text-[var(--muted)] mb-1">Name</label>
+        <label htmlFor="node-name" className="mb-1.5 block text-[13px] font-medium text-muted">
+          Name
+        </label>
         <input
+          id="node-name"
           autoFocus
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && save()}
-          className="w-full mb-3 rounded-sm border border-[var(--border-c)] bg-[var(--panel-2)] px-2 py-1.5 text-[var(--foreground)] outline-none focus:border-[#f0b429]"
+          className="mb-5 h-10 w-full rounded-ui border border-line bg-ground px-3 text-[15px] text-ink outline-none transition-colors focus:border-ink"
         />
 
-        <label className="block text-xs text-[var(--muted)] mb-1">Status</label>
-        <select
-          value={status}
-          onChange={(e) => setStatusLocal(e.target.value as NodeStatus)}
-          className="w-full mb-4 rounded-sm border border-[var(--border-c)] bg-[var(--panel-2)] px-2 py-1.5 text-[var(--foreground)] outline-none focus:border-[#f0b429]"
-        >
+        <div className="mb-1.5 text-[13px] font-medium text-muted" id="status-label">
+          Status
+        </div>
+        <div role="radiogroup" aria-labelledby="status-label" className="mb-6 grid grid-cols-2 gap-2">
           {STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+            <button
+              key={s}
+              type="button"
+              role="radio"
+              aria-checked={status === s}
+              onClick={() => setStatusLocal(s)}
+              className={`flex flex-col items-start gap-0.5 rounded-ui border px-3 py-2 text-left transition-colors ${
+                status === s ? "border-ink bg-panel-2" : "border-line hover:border-muted"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-[14px] font-semibold capitalize">
+                <span className="size-2.5 rounded-full" style={{ background: STATUS_COLOR[s] }} />
+                {s}
+              </span>
+              <span className="text-[12px] text-muted">{STATUS_HINT[s]}</span>
+            </button>
           ))}
-        </select>
+        </div>
 
         <div className="flex justify-end gap-2">
           <button
-            className="px-3 py-1.5 rounded-sm border border-[var(--border-c)] hover:border-[#f0b429]"
-            onClick={close}
+            type="button"
+            className="h-10 rounded-ui border border-line px-4 text-[14px] font-medium transition-colors hover:border-muted"
+            onClick={() => setEditing(null)}
           >
             Cancel
           </button>
           <button
-            className="px-3 py-1.5 rounded-sm border border-[#f0b429] bg-[#f0b429] text-[#0a0a0b]"
+            type="button"
+            className="h-10 rounded-ui bg-ink px-5 text-[14px] font-semibold text-on-ink transition-transform active:scale-[0.98]"
             onClick={save}
           >
             Save

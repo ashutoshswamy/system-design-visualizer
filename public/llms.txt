@@ -1,0 +1,14 @@
+# System Design Visualizer
+
+> A free, browser-only canvas for sketching system design diagrams. Drag 33 component types onto an infinite canvas, connect them with clean 45-degree lines, set per-component status (idle, healthy, warning, down), and export a tight-cropped 2x PNG. No accounts; designs are stored in the browser's localStorage and never leave it.
+
+## Pages
+- [Home](https://designvisualizer.ashutoshswamy.in/): what it is and a live example diagram
+- [Examples](https://designvisualizer.ashutoshswamy.in/examples): worked diagrams for a URL shortener, chat app and news feed
+- [Editor](https://designvisualizer.ashutoshswamy.in/editor): the diagram canvas
+
+## Facts
+- Author: Ashutosh Swamy (https://ashutoshswamy.in)
+- Price: free
+- Export: PNG at 2x, named after the design
+- Component categories: client and edge, compute, data, messaging, integration and ops
