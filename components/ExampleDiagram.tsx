@@ -5,7 +5,7 @@ import { CSS_THEME } from "@/lib/visualizer/theme";
 import { Station } from "@/components/visualizer/Station";
 
 /** Static, server-rendered diagram of an example, drawn with the same station and line shapes as the editor. */
-export function ExampleDiagram({ example }: { example: Example }) {
+export function ExampleDiagram({ example, compact = false }: { example: Example; compact?: boolean }) {
   const pad = 24;
   const w = Math.max(...example.nodes.map((n) => n.x)) + NODE_W + pad * 2;
   const h = Math.max(...example.nodes.map((n) => n.y)) + NODE_H + pad * 2;
@@ -13,7 +13,9 @@ export function ExampleDiagram({ example }: { example: Example }) {
   const types = [...new Set(example.links.map(([a]) => byId.get(a)!.type))];
 
   return (
-    <svg viewBox={`${-pad} ${-pad} ${w} ${h}`} className="w-full min-w-[720px]" role="img" aria-label={`${example.title}: ${example.nodes.map((n) => n.label).join(", ")}`}>
+    <svg viewBox={`${-pad} ${-pad} ${w} ${h}`} className={compact ? "h-auto w-full" : "w-full min-w-[720px]"}
+      {...(compact ? { "aria-hidden": true } : { role: "img", "aria-label": `${example.title}: ${example.nodes.map((n) => n.label).join(", ")}` })}
+    >
       <defs>
         {types.map((t) => (
           <marker key={t} id={`ex-${t}`} markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto">

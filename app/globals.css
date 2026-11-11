@@ -164,7 +164,28 @@ select {
   animation: rise 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* FAQ: smooth open/close where ::details-content is supported; instant elsewhere */
+@supports selector(::details-content) {
+  .faq {
+    interpolate-size: allow-keywords;
+  }
+  .faq::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 320ms cubic-bezier(0.16, 1, 0.3, 1),
+      content-visibility 320ms allow-discrete;
+  }
+  .faq[open]::details-content {
+    block-size: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .faq::details-content {
+    transition: none !important;
+  }
+
   .map-station,
   .map-line,
   .rise {

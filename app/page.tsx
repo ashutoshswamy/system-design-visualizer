@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { COMPONENT_COUNT, NODE_CATEGORIES, NODE_TYPES } from "@/lib/visualizer/constants";
 
 const DEV_LINKS = [
+  { label: "Portfolio", href: "https://ashutoshswamy.in" },
   { label: "GitHub", href: "https://github.com/ashutoshswamy" },
   { label: "LinkedIn", href: "https://linkedin.com/in/ashutoshswamy" },
   { label: "X", href: "https://x.com/ashutoshswamy_" },
@@ -176,17 +177,37 @@ export default function LandingPage() {
 
         {/* FAQ */}
         <section className="mx-auto w-full max-w-[1280px] px-5 py-16 sm:px-8 lg:py-24">
-          <h2 className="max-w-[18ch] text-4xl font-bold leading-[1.02] tracking-[-0.03em] sm:text-5xl">Questions, answered.</h2>
-          <div className="mt-10 max-w-3xl divide-y divide-line border-y border-line">
-            {FAQ.map((f) => (
-              <details key={f.q} className="group py-5">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-xl font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
-                  {f.q}
-                  <span aria-hidden className="text-2xl font-normal text-muted transition-transform group-open:rotate-45">+</span>
-                </summary>
-                <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed text-muted">{f.a}</p>
-              </details>
-            ))}
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
+            <h2 className="max-w-[12ch] text-4xl font-bold leading-[1.02] tracking-[-0.03em] sm:text-5xl lg:sticky lg:top-8 lg:col-span-4 lg:self-start">
+              Questions, answered.
+            </h2>
+            {/* Each answer is a station on one line; opening it fills the stop in its line color */}
+            <ol className="lg:col-span-8">
+              {FAQ.map((f, i) => {
+                const color = TRACK[i % TRACK.length];
+                const last = i === FAQ.length - 1;
+                return (
+                  <li key={f.q} className="relative">
+                    {!last && <span aria-hidden className="absolute left-[10px] top-8 h-full w-1" style={{ background: color }} />}
+                    <details className="faq group relative pl-12" style={{ "--c": color } as React.CSSProperties}>
+                      <summary className="flex min-h-[44px] cursor-pointer list-none items-start justify-between gap-6 py-[10px] font-display text-xl font-semibold tracking-tight transition-colors hover:text-muted [&::-webkit-details-marker]:hidden">
+                        <span
+                          aria-hidden
+                          className="absolute left-0 top-[14px] size-6 rounded-full border-[5px] bg-ground transition-colors duration-300 group-open:bg-[var(--c)]"
+                          style={{ borderColor: color }}
+                        />
+                        <span className="pt-px">{f.q}</span>
+                        <span aria-hidden className="relative mt-[14px] size-4 shrink-0 text-muted">
+                          <span className="absolute left-0 top-[7px] h-0.5 w-4 bg-current" />
+                          <span className="absolute left-[7px] top-0 h-4 w-0.5 bg-current transition-transform duration-300 group-open:rotate-90" />
+                        </span>
+                      </summary>
+                      <p className="max-w-[60ch] pb-8 pt-1 text-[17px] leading-relaxed text-muted">{f.a}</p>
+                    </details>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
         </section>
 
@@ -210,7 +231,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="mx-auto mt-auto flex w-full max-w-[1280px] flex-col gap-3 border-t border-line px-5 py-6 text-[14px] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-8">
-        <span className="flex flex-wrap gap-x-5 gap-y-1"><span>Built with plain SVG and no canvas library.</span><Link href="/examples" className="underline decoration-line underline-offset-4 hover:text-ink">Examples</Link></span>
+        <Link href="/examples" className="underline decoration-line underline-offset-4 hover:text-ink">Examples</Link>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <span className="text-ink">Ashutosh Swamy</span>
           {DEV_LINKS.map((l) => (
